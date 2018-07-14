@@ -3,11 +3,11 @@ import {
   Renderer, Input, Output, EventEmitter, ChangeDetectorRef, forwardRef, HostListener
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import 'rxjs/add/operator/filter';
+import { filter } from 'rxjs/operators';
 import Cropper from 'cropperjs';
 
 import { ImageUploaderService } from './image-uploader.service';
-import { FancyImageUploaderOptions, ImageResult, ResizeOptions, CropOptions } from './interfaces';
+import { ImageUploaderOptions, ImageResult, ResizeOptions, CropOptions } from './interfaces';
 import { createImage, resizeImage } from './utils';
 import { UploadedFile } from './uploaded-file';
 
@@ -54,7 +54,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   @ViewChild('imageElement') imageElement: ElementRef;
   @ViewChild('fileInput') fileInputElement: ElementRef;
   @ViewChild('dragOverlay') dragOverlayElement: ElementRef;
-  @Input() options: FancyImageUploaderOptions;
+  @Input() options: ImageUploaderOptions;
   @Output() upload: EventEmitter<UploadedFile> = new EventEmitter<UploadedFile>();
   @Output() statusChange: EventEmitter<Status> = new EventEmitter<Status>();
 
@@ -263,7 +263,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
     const id = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
 
     // file progress
-    const sub = this.uploader.fileProgress$.filter(file => file.id === id).subscribe(file => {
+    const sub = this.uploader.fileProgress$.pipe(filter(file => file.id === id)).subscribe(file => {
       this.progress = file.progress;
 
       if (file.error) {

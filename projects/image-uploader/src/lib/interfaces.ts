@@ -8,7 +8,7 @@ export interface FileUploaderOptions {
   authTokenPrefix?: string;
 }
 
-export interface FancyImageUploaderOptions extends FileUploaderOptions {
+export interface ImageUploaderOptions extends FileUploaderOptions {
   thumbnailHeight?: number;
   thumbnailWidth?: number;
   thumbnailResizeMode?: string;
