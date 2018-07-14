@@ -1,8 +1,21 @@
 {
-  "name": "image-uploader",
+  "name": "ngx-image-uploader",
   "version": "0.0.1",
+  "description": "Angular2 asynchronous image uploader with preview",
+  "keywords": [
+    "angular",
+    "ngx",
+    "img",
+    "image",
+    "uploader"
+  ],
+  "author": "Olegas Gončarovas <ogix777@gmail.com>",
+  "license": "MIT",
   "peerDependencies": {
     "@angular/common": "^6.0.0-rc.0 || ^6.0.0",
     "@angular/core": "^6.0.0-rc.0 || ^6.0.0"
+  },
+  "dependencies": {
+    "cropperjs": "^1.4.0"
   }
 }

@@ -3,5 +3,8 @@
   "dest": "../../dist/image-uploader",
   "lib": {
     "entryFile": "src/public_api.ts"
-  }
+  },
+  "whitelistedNonPeerDependencies": [
+    "cropperjs"
+  ]
 }
