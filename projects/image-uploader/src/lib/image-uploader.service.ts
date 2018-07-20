@@ -1,29 +1,22 @@
-import { Observer } from 'rxjs';
+import { Observer, Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
-import { Observable } from 'rxjs';
-import { UploadedFile } from './uploaded-file';
+import { HttpClient, HttpRequest, HttpEventType, HttpResponse, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+
+import { FileQueueObject } from './file-queue-object';
+import { FileQueueStatus } from './file-queue-status';
 import { FileUploaderOptions, CropOptions } from './interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageUploaderService {
-  private _fileProgress$: Subject<UploadedFile>;
 
-  constructor() {
-    this._fileProgress$ = <Subject<UploadedFile>>new Subject();
-  }
+  constructor(private http: HttpClient) {}
 
-  get fileProgress$() {
-    return this._fileProgress$.asObservable();
-  }
-
-  uploadFile(file: File, options: FileUploaderOptions, cropOptions?: CropOptions): string {
+  uploadFile(file: File, options: FileUploaderOptions, cropOptions?: CropOptions): Observable<FileQueueObject> {
     this.setDefaults(options);
-    const xhr = new XMLHttpRequest();
-    const form = new FormData();
 
+    const form = new FormData();
     form.append(options.fieldName, file, file.name);
 
     if (cropOptions) {
@@ -33,100 +26,102 @@ export class ImageUploaderService {
       form.append('Height', cropOptions.height.toString());
     }
 
-    const uploadingFile = new UploadedFile(
-      this.generateRandomIndex(),
-      file.name,
-      file.size
-    );
+    // upload file and report progress
+    const req = new HttpRequest('POST', options.uploadUrl, form, {
+      reportProgress: true,
+      withCredentials: options.withCredentials,
+      headers: this._buildHeaders(options)
+    });
 
-    xhr.upload.onprogress = (e: ProgressEvent) => {
-      if (e.lengthComputable) {
-        const percent = Math.round(e.loaded / e.total * 100);
-        uploadingFile.progress = percent;
-        this._fileProgress$.next(uploadingFile);
-      }
-    };
+    return Observable.create(obs => {
+      const queueObj = new FileQueueObject(file);
 
-    xhr.upload.onabort = (e: Event) => {
-      uploadingFile.setAbort();
-      this._fileProgress$.next(uploadingFile);
-    };
-
-    xhr.upload.onerror = (e: Event) => {
-      uploadingFile.setError();
-      this._fileProgress$.next(uploadingFile);
-    };
-
-    xhr.onload = () => {
-      const success = this.isSuccessCode(xhr.status);
-
-      if (!success) {
-        uploadingFile.setError();
-      }
-
-      uploadingFile.onFinished(
-        xhr.status,
-        xhr.statusText,
-        xhr.response
+      queueObj.request = this.http.request(req).subscribe(
+        (event: any) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            this._uploadProgress(queueObj, event);
+            obs.next(queueObj);
+          } else if (event instanceof HttpResponse) {
+            this._uploadComplete(queueObj, event);
+            obs.next(queueObj);
+            obs.complete();
+          }
+        },
+        (err: HttpErrorResponse) => {
+          if (err.error instanceof Error) {
+            // A client-side or network error occurred. Handle it accordingly.
+            this._uploadFailed(queueObj, err);
+            obs.next(queueObj);
+            obs.complete();
+          } else {
+            // The backend returned an unsuccessful response code.
+            this._uploadFailed(queueObj, err);
+            obs.next(queueObj);
+            obs.complete();
+          }
+        }
       );
-
-      this._fileProgress$.next(uploadingFile);
-    };
-
-    xhr.open(options.httpMethod, options.uploadUrl, true);
-    xhr.withCredentials = options.withCredentials;
-
-    if (options.customHeaders) {
-      Object.keys(options.customHeaders).forEach((key) => {
-        xhr.setRequestHeader(key, options.customHeaders[key]);
-      });
-    }
-
-    if (options.authToken) {
-      xhr.setRequestHeader('Authorization', `${options.authTokenPrefix} ${options.authToken}`);
-    }
-
-    xhr.send(form);
-    return uploadingFile.id;
+    });
   }
 
   getFile(url: string, options: { authToken?: string, authTokenPrefix?: string }): Observable<File> {
     return Observable.create((observer: Observer<File>) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', url, true);
-      xhr.responseType = 'blob';
-
-      xhr.onload = () => {
-        const success = this.isSuccessCode(xhr.status);
-
-        if (!success) {
-          observer.error(xhr.status);
-          observer.complete();
-        } else {
-          const contentType = xhr.getResponseHeader('Content-Type');
-          const blob = new File([xhr.response], 'filename', { type: contentType });
-
-          if (blob.size > 0) {
-            observer.next(blob);
-            observer.complete();
-          } else {
-            observer.error('No image');
-            observer.complete();
-          }
-        }
-      };
-
-      xhr.onerror = (e) => {
-        observer.error(xhr.status);
-        observer.complete();
-      };
+      let headers = new HttpHeaders();
 
       if (options.authToken) {
-        xhr.setRequestHeader('Authorization', `${options.authTokenPrefix} ${options.authToken}`);
+        headers = headers.append('Authorization', `${options.authTokenPrefix} ${options.authToken}`);
       }
 
-      xhr.send();
+      this.http.get(url, { responseType: 'blob', headers: headers}).subscribe(res => {
+        const file = new File([res], 'filename', { type: res.type });
+        observer.next(file);
+        observer.complete();
+      }, err => {
+        observer.error(err.status);
+        observer.complete();
+      });
     });
+  }
+
+  private _buildHeaders(options: FileUploaderOptions): HttpHeaders {
+    let headers = new HttpHeaders();
+
+    if (options.authToken) {
+      headers = headers.append('Authorization', `${options.authTokenPrefix} ${options.authToken}`);
+    }
+
+    if (options.customHeaders) {
+      Object.keys(options.customHeaders).forEach((key) => {
+        headers = headers.append(key, options.customHeaders[key]);
+      });
+    }
+
+    return headers;
+  }
+
+  private _uploadProgress(queueObj: FileQueueObject, event: any) {
+    // update the FileQueueObject with the current progress
+    const progress = Math.round(100 * event.loaded / event.total);
+    queueObj.progress = progress;
+    queueObj.status = FileQueueStatus.Progress;
+    // this._queue.next(this._files);
+  }
+
+  private _uploadComplete(queueObj: FileQueueObject, response: HttpResponse<any>) {
+    // update the FileQueueObject as completed
+    queueObj.progress = 100;
+    queueObj.status = FileQueueStatus.Success;
+    queueObj.response = response;
+    // this._queue.next(this._files);
+    // this.onCompleteItem(queueObj, response.body);
+  }
+
+  private _uploadFailed(queueObj: FileQueueObject, response: HttpErrorResponse) {
+    // update the FileQueueObject as errored
+    queueObj.progress = 0;
+    queueObj.status = FileQueueStatus.Error;
+    queueObj.response = response;
+    // this._queue.next(this._files);
   }
 
   private setDefaults(options: FileUploaderOptions) {
@@ -134,13 +129,5 @@ export class ImageUploaderService {
     options.httpMethod = options.httpMethod || 'POST';
     options.authTokenPrefix = options.authTokenPrefix || 'Bearer';
     options.fieldName = options.fieldName || 'file';
-  }
-
-  private isSuccessCode(status: number): boolean {
-    return (status >= 200 && status < 300) || status === 304;
-  }
-
-  private generateRandomIndex(): string {
-    return Math.random().toString(36).substring(7);
   }
 }

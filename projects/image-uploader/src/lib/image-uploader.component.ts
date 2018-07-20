@@ -3,13 +3,12 @@ import {
   Renderer, Input, Output, EventEmitter, ChangeDetectorRef, forwardRef, HostListener
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { filter } from 'rxjs/operators';
 import Cropper from 'cropperjs';
 
 import { ImageUploaderService } from './image-uploader.service';
 import { ImageUploaderOptions, ImageResult, ResizeOptions, CropOptions } from './interfaces';
 import { createImage, resizeImage } from './utils';
-import { UploadedFile } from './uploaded-file';
+import { FileQueueObject } from './file-queue-object';
 
 export enum Status {
   NotSelected,
@@ -55,7 +54,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   @ViewChild('fileInput') fileInputElement: ElementRef;
   @ViewChild('dragOverlay') dragOverlayElement: ElementRef;
   @Input() options: ImageUploaderOptions;
-  @Output() upload: EventEmitter<UploadedFile> = new EventEmitter<UploadedFile>();
+  @Output() upload: EventEmitter<FileQueueObject> = new EventEmitter<FileQueueObject>();
   @Output() statusChange: EventEmitter<Status> = new EventEmitter<Status>();
 
   propagateChange = (_: any) => {};
@@ -260,15 +259,15 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
       };
     }
 
-    const id = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
+   // const queueObj = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
 
     // file progress
-    const sub = this.uploader.fileProgress$.pipe(filter(file => file.id === id)).subscribe(file => {
+    this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions).subscribe(file => {
       this.progress = file.progress;
 
-      if (file.error) {
-        if (file.status || file.statusText) {
-          this.errorMessage = `${file.status}: ${file.statusText}`;
+      if (file.isError()) {
+        if (file.response.status || file.response.statusText) {
+          this.errorMessage = `${file.response.status}: ${file.response.statusText}`;
         } else {
           this.errorMessage = 'Error while uploading';
         }
@@ -276,15 +275,15 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
         this.changeDetector.detectChanges();
       }
 
-      if (file.done) {
+      if (!file.inProgress()) {
         // notify that value was changed only when image was uploaded and no error
-        if (!file.error) {
+        if (file.isSuccess()) {
           this.propagateChange(this._imageThumbnail);
           this.status = Status.Selected;
           this.fileToUpload = undefined;
         }
+
         this.upload.emit(file);
-        sub.unsubscribe();
       }
     });
   }
