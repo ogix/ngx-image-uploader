@@ -7,4 +7,5 @@
 </div>
 <h2>Example</h2>
 
-<ngx-image-uploader></ngx-image-uploader>
+<ngx-image-uploader [options]="imageOptions" #imageUploader></ngx-image-uploader>
+<button type="button" (click)="imageUploader.uploadImage()">Upload</button>
