@@ -1,6 +1,10 @@
 {
   "name": "ngx-image-uploader",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "scripts": {
+    "prepublish": "ng build image-uploader --prod",
+    "publish": "npm publish ../../dist/image-uploader"
+  },
   "description": "Angular2 asynchronous image uploader with preview",
   "keywords": [
     "angular",
