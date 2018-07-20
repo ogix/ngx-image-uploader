@@ -1,27 +1,59 @@
-# NgxImageUploaderApp
+# Angular image uploader [![npm version](https://badge.fury.io/js/ngx-image-uploader.svg)](https://badge.fury.io/js/ngx-image-uploader) ![Dependencies](https://david-dm.org/ogix/ngx-image-uploader.svg)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.7.
+Angular image upload component with preview and cropping features
 
-## Development server
+### Demo
+See demo here: [demo](https://stackblitz.com/github/ogix/ngx-image-uploader)
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+### Install
+```
+npm install ngx-image-uploader --save
+```
+### Usage
 
-## Code scaffolding
+Add image uploader module to your module's ```imports```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```js
+import { NgModule } from '@angular/core';
+import { BrowserModule  } from '@angular/platform-browser';
+import { AppComponent } from './app';
 
-## Build
+import { ImageUploaderModule } from 'ngx-image-uploader';
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+@NgModule({
+  imports: [BrowserModule, ImageUploaderModule],
+  declarations: [AppComponent],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+```
 
-## Running unit tests
+Use it in your component
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```js
+import { Component } from '@angular/core';
+import { ImageUploaderOptions, FileQueueObject } from 'ngx-image-uploader';
 
-## Running end-to-end tests
+@Component({
+  selector: 'example-app',
+  template: '<ngx-image-uploader [options]="options" (upload)="onUpload($event)"></ngx-image-uploader>'
+})
+export class AppComponent {
+  options: ImageUploaderOptions = {
+      thumbnailHeight: 150,
+      thumbnailWidth: 150,
+      uploadUrl: 'http://some-server.com/upload',
+      allowedImageTypes: ['image/png', 'image/jpeg'],
+      maxImageSize: 3
+  };
+  
+  onUpload(file: FileQueueObject) {
+    console.log(file.response);
+  }
+}
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+```
 
-## Further help
+### License
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+[MIT](https://tldrlegal.com/license/mit-license) © [Olegas Gončarovas](https://github.com/ogix)
