@@ -1,0 +1,32 @@
+{
+  "name": "ngx-image-uploader",
+  "version": "0.0.2",
+  "description": "Angular2 asynchronous image uploader with preview",
+  "keywords": [
+    "angular",
+    "ngx",
+    "img",
+    "image",
+    "uploader"
+  ],
+  "author": "Olegas Gončarovas <ogix777@gmail.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/common": "^6.0.0-rc.0 || ^6.0.0",
+    "@angular/core": "^6.0.0-rc.0 || ^6.0.0"
+  },
+  "dependencies": {
+    "cropperjs": "^1.4.0",
+    "tslib": "^1.9.0"
+  },
+  "main": "bundles/ngx-image-uploader.umd.js",
+  "module": "fesm5/ngx-image-uploader.js",
+  "es2015": "fesm2015/ngx-image-uploader.js",
+  "esm5": "esm5/ngx-image-uploader.js",
+  "esm2015": "esm2015/ngx-image-uploader.js",
+  "fesm5": "fesm5/ngx-image-uploader.js",
+  "fesm2015": "fesm2015/ngx-image-uploader.js",
+  "typings": "ngx-image-uploader.d.ts",
+  "metadata": "ngx-image-uploader.metadata.json",
+  "sideEffects": false
+}
