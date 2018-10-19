@@ -1,14 +1,25 @@
 import {
-  Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef,
-  Renderer, Input, Output, EventEmitter, ChangeDetectorRef, forwardRef, HostListener
+  AfterViewChecked,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  forwardRef,
+  HostBinding,
+  HostListener,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild
 } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
 import Cropper from 'cropperjs';
 
-import { ImageUploaderService } from './image-uploader.service';
-import { ImageUploaderOptions, ImageResult, ResizeOptions, CropOptions } from './interfaces';
-import { createImage, resizeImage } from './utils';
-import { FileQueueObject } from './file-queue-object';
+import {ImageUploaderService} from './image-uploader.service';
+import {CropOptions, ImageResult, ImageUploaderOptions, ResizeOptions} from './interfaces';
+import {createImage, resizeImage} from './utils';
+import {FileQueueObject} from './file-queue-object';
 
 export enum Status {
   NotSelected,
@@ -23,10 +34,6 @@ export enum Status {
   selector: 'ngx-image-uploader',
   templateUrl: './image-uploader.component.html',
   styleUrls: ['./image-uploader.component.css'],
-  host: {
-    '[style.width]': 'thumbnailWidth + "px"',
-    '[style.height]': 'thumbnailHeight + "px"'
-  },
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -36,6 +43,8 @@ export enum Status {
   ]
 })
 export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewChecked, ControlValueAccessor {
+  @HostBinding('style.width') width = '150px';
+  @HostBinding('style.height') height = '150px';
   statusEnum = Status;
   _status: Status = Status.NotSelected;
 
@@ -60,7 +69,6 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   propagateChange = (_: any) => {};
 
   constructor(
-    private renderer: Renderer,
     private uploader: ImageUploaderService,
     private changeDetector: ChangeDetectorRef) { }
 
@@ -189,7 +197,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   }
 
   onImageClicked() {
-    this.renderer.invokeElementMethod(this.fileInputElement.nativeElement, 'click');
+    (this.fileInputElement.nativeElement as HTMLElement).click(); // Not sure if it works with Angular Universal
   }
 
   onFileChanged() {
