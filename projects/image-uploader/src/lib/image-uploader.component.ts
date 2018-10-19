@@ -30,6 +30,11 @@ export enum Status {
   Error
 }
 
+export interface FileHolderStatus {
+  status: Status;
+  file: File;
+}
+
 @Component({
   selector: 'ngx-image-uploader',
   templateUrl: './image-uploader.component.html',
@@ -63,14 +68,16 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   @ViewChild('fileInput') fileInputElement: ElementRef;
   @ViewChild('dragOverlay') dragOverlayElement: ElementRef;
   @Input() options: ImageUploaderOptions;
+  @Input() fileOnEvents = false as boolean;
   @Output() upload: EventEmitter<FileQueueObject> = new EventEmitter<FileQueueObject>();
-  @Output() statusChange: EventEmitter<Status> = new EventEmitter<Status>();
+  @Output() statusChange: EventEmitter<Status | FileHolderStatus> = new EventEmitter<Status | FileHolderStatus>();
 
   propagateChange = (_: any) => {};
 
   constructor(
     private uploader: ImageUploaderService,
-    private changeDetector: ChangeDetectorRef) { }
+    private changeDetector: ChangeDetectorRef) {
+  }
 
   get imageThumbnail() {
     return this._imageThumbnail;
@@ -107,7 +114,14 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
 
   set status(value) {
     this._status = value;
-    this.statusChange.emit(value);
+    let event = value as Status | FileHolderStatus;
+    if (this.fileOnEvents && this.fileToUpload && value === Status.Loaded) {
+      event = {
+        status: value,
+        file: this.fileToUpload
+      };
+    }
+    this.statusChange.emit(event);
   }
 
   writeValue(value: any) {
@@ -123,7 +137,8 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
     this.propagateChange = fn;
   }
 
-  registerOnTouched() {}
+  registerOnTouched() {
+  }
 
   ngOnInit() {
     if (this.options) {
@@ -267,7 +282,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
       };
     }
 
-   // const queueObj = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
+    // const queueObj = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
 
     // file progress
     this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions).subscribe(file => {
