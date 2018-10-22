@@ -1,14 +1,25 @@
 import {
-  Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef,
-  Renderer, Input, Output, EventEmitter, ChangeDetectorRef, forwardRef, HostListener
+  AfterViewChecked,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  forwardRef,
+  HostBinding,
+  HostListener,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild
 } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
 import Cropper from 'cropperjs';
 
-import { ImageUploaderService } from './image-uploader.service';
-import { ImageUploaderOptions, ImageResult, ResizeOptions, CropOptions } from './interfaces';
-import { createImage, resizeImage } from './utils';
-import { FileQueueObject } from './file-queue-object';
+import {ImageUploaderService} from './image-uploader.service';
+import {CropOptions, ImageResult, ImageUploaderOptions, ResizeOptions} from './interfaces';
+import {createImage, resizeImage} from './utils';
+import {FileQueueObject} from './file-queue-object';
 
 export enum Status {
   NotSelected,
@@ -19,14 +30,15 @@ export enum Status {
   Error
 }
 
+export interface FileHolderStatus {
+  status: Status;
+  file: File;
+}
+
 @Component({
   selector: 'ngx-image-uploader',
   templateUrl: './image-uploader.component.html',
   styleUrls: ['./image-uploader.component.css'],
-  host: {
-    '[style.width]': 'thumbnailWidth + "px"',
-    '[style.height]': 'thumbnailHeight + "px"'
-  },
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -36,6 +48,8 @@ export enum Status {
   ]
 })
 export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewChecked, ControlValueAccessor {
+
+
   statusEnum = Status;
   _status: Status = Status.NotSelected;
 
@@ -46,6 +60,8 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   progress: number;
   origImageWidth: number;
   orgiImageHeight: number;
+  @HostBinding('style.width') width = this.thumbnailWidth + 'px';
+  @HostBinding('style.height') height = this.thumbnailHeight + 'px';
 
   cropper: Cropper = undefined;
   fileToUpload: File;
@@ -55,14 +71,14 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   @ViewChild('dragOverlay') dragOverlayElement: ElementRef;
   @Input() options: ImageUploaderOptions;
   @Output() upload: EventEmitter<FileQueueObject> = new EventEmitter<FileQueueObject>();
-  @Output() statusChange: EventEmitter<Status> = new EventEmitter<Status>();
+  @Output() statusChange: EventEmitter<Status | FileHolderStatus> = new EventEmitter<Status | FileHolderStatus>();
 
   propagateChange = (_: any) => {};
 
   constructor(
-    private renderer: Renderer,
     private uploader: ImageUploaderService,
-    private changeDetector: ChangeDetectorRef) { }
+    private changeDetector: ChangeDetectorRef) {
+  }
 
   get imageThumbnail() {
     return this._imageThumbnail;
@@ -99,7 +115,15 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
 
   set status(value) {
     this._status = value;
-    this.statusChange.emit(value);
+    let event = value as Status | FileHolderStatus;
+    console.log(this.options.fileOnEvents);
+    if (this.options.fileOnEvents && this.fileToUpload && value === Status.Selected) {
+      event = {
+        status: value,
+        file: this.fileToUpload
+      };
+    }
+    this.statusChange.emit(event);
   }
 
   writeValue(value: any) {
@@ -115,7 +139,8 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
     this.propagateChange = fn;
   }
 
-  registerOnTouched() {}
+  registerOnTouched() {
+  }
 
   ngOnInit() {
     if (this.options) {
@@ -133,6 +158,9 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
       }
       if (this.options.cropEnabled === undefined) {
         this.options.cropEnabled = false;
+      }
+      if (this.options.fileOnEvents === undefined) {
+        this.options.fileOnEvents = false;
       }
 
       if (this.options.autoUpload && this.options.cropEnabled) {
@@ -189,7 +217,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   }
 
   onImageClicked() {
-    this.renderer.invokeElementMethod(this.fileInputElement.nativeElement, 'click');
+    (this.fileInputElement.nativeElement as HTMLElement).click(); // Not sure if it works with Angular Universal
   }
 
   onFileChanged() {
@@ -259,7 +287,7 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
       };
     }
 
-   // const queueObj = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
+    // const queueObj = this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions);
 
     // file progress
     this.uploader.uploadFile(this.fileToUpload, this.options, cropOptions).subscribe(file => {
