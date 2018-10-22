@@ -17,6 +17,7 @@ export interface ImageUploaderOptions extends FileUploaderOptions {
   resizeOnLoad?: boolean;
   autoUpload?: boolean;
   cropEnabled?: boolean;
+  fileOnEvents?: boolean;
   cropAspectRatio?: number;
 }
 

@@ -68,7 +68,6 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   @ViewChild('fileInput') fileInputElement: ElementRef;
   @ViewChild('dragOverlay') dragOverlayElement: ElementRef;
   @Input() options: ImageUploaderOptions;
-  @Input() fileOnEvents = false as boolean;
   @Output() upload: EventEmitter<FileQueueObject> = new EventEmitter<FileQueueObject>();
   @Output() statusChange: EventEmitter<Status | FileHolderStatus> = new EventEmitter<Status | FileHolderStatus>();
 
@@ -115,7 +114,8 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   set status(value) {
     this._status = value;
     let event = value as Status | FileHolderStatus;
-    if (this.fileOnEvents && this.fileToUpload && value === Status.Loaded) {
+    console.log(this.options.fileOnEvents);
+    if (this.options.fileOnEvents && this.fileToUpload && value === Status.Selected) {
       event = {
         status: value,
         file: this.fileToUpload
@@ -156,6 +156,9 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
       }
       if (this.options.cropEnabled === undefined) {
         this.options.cropEnabled = false;
+      }
+      if (this.options.fileOnEvents === undefined) {
+        this.options.fileOnEvents = false;
       }
 
       if (this.options.autoUpload && this.options.cropEnabled) {
