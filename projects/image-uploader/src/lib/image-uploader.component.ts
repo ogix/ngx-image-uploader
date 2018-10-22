@@ -48,8 +48,8 @@ export interface FileHolderStatus {
   ]
 })
 export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewChecked, ControlValueAccessor {
-  @HostBinding('style.width') width = '150px';
-  @HostBinding('style.height') height = '150px';
+
+
   statusEnum = Status;
   _status: Status = Status.NotSelected;
 
@@ -60,6 +60,8 @@ export class ImageUploaderComponent implements OnInit, OnDestroy, AfterViewCheck
   progress: number;
   origImageWidth: number;
   orgiImageHeight: number;
+  @HostBinding('style.width') width = this.thumbnailWidth + 'px';
+  @HostBinding('style.height') height = this.thumbnailHeight + 'px';
 
   cropper: Cropper = undefined;
   fileToUpload: File;
